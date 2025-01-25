@@ -70,9 +70,15 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	// преобразует данные из json в структуру.
 	if err = json.Unmarshal(buf.Bytes(), &task); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if _, exists := tasks[task.ID]; exists {
+		// Если задача с таким ID уже существует, возвращаем ошибку
+		http.Error(w, "Задача с таким ID уже существует", http.StatusBadRequest)
 		return
 	}
 
@@ -104,28 +110,19 @@ func getTaskById(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-// Обработчик удаления задачи по ID
 func removeTaskById(w http.ResponseWriter, r *http.Request) {
-	var task Task
-
 	id := chi.URLParam(r, "id")
-	// проверка наличия элемента в мапе
-	task, ok := tasks[id]
-	if !ok {
+
+	// Проверка наличия задачи
+	if _, ok := tasks[id]; !ok {
 		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 
-	resp, err := json.Marshal(task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 	delete(tasks, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
 }
 
 func main() {
